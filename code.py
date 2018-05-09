@@ -18,6 +18,7 @@ from sklearn.svm import SVC, NuSVC
 from sklearn.decomposition import PCA, RandomizedPCA, KernelPCA
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import LinearRegression as LR,LassoLarsIC
+from sklearn.metrics import accuracy_score
 import pandas as pd
 
 
@@ -335,6 +336,24 @@ def __pca(X,solver,C=None,k = 'linear'):
         return pca_result, variance_ratio
     else: return None
 
+def __drop(a,c,r):
+    a = np.delete(a,r,0)
+    a = np.delete(a,c,1)
+    return a
+
+def __mis_err(cm):
+    T = np.sum(cm)
+    TP2 = cm[2,2]
+    TN2 = np.sum(__drop(cm,2,2))
+    m2 = 1.-((TP2+TN2)/T)
+    TP1 = cm[1,1]
+    TN1 = np.sum(__drop(cm,1,1))
+    m1 = 1.-((TP1+TN1)/T)
+    TP0 = cm[0,0]
+    TN0 = np.sum(__drop(cm,0,0))
+    m0 = 1.-((TP0+TN0)/T)
+    return [m0, m1, m2]
+
 def __plot_pca(r,vr,ax,txt,c='navy'):
     ax.plot(np.cumsum(vr), color=c, linestyle='--')
     ax.axvline(3,color='k',linestyle="-.")
@@ -353,7 +372,7 @@ def problem3():
     df_test = pd.read_csv("Data_Stat5526_FinalExam/geno_test.txt")
     X_train,X_test = df_train[X_names].as_matrix(),df_test[X_names].as_matrix()
     y_train,y_test = df_train[Y_names].as_matrix()[:,0],df_test[Y_names].as_matrix()[:,0]
-    print df_train.population.unique()
+    print df_train.population.unique(), df_test.population.unique()
     keys = df_train.population.unique()
 
     ## LDA
@@ -363,7 +382,11 @@ def problem3():
     M_svd = __conf_matrix(y_svd,y_test)
     M_lsqr = __conf_matrix(y_lsqr,y_test)
     M_eigen = __conf_matrix(y_eigen,y_test)
-    print "Confusion matrix for LDA - \n",M_svd, "\n",M_lsqr,"\n", M_eigen
+    print __mis_err(M_svd)
+    print __mis_err(M_lsqr)
+    print __mis_err(M_eigen)
+    #print M_svd
+    #print "Confusion matrix for LDA - \n",M_svd, "\n",M_lsqr,"\n", M_eigen
     fig = plt.figure(figsize=(10,10),dpi=120)
     ax = fig.add_subplot(321)
     __plot_roc(y_test,s_svd,ax,r'(a) $LDA\left(Solver=SVD\right)$')
@@ -375,7 +398,8 @@ def problem3():
     ## QDA
     y_pred,s = __qda(X_train,y_train,X_test)
     M = __conf_matrix(y_pred,y_test)
-    print "Confusion matrix for QDA - \n",M
+    print __mis_err(M)
+    #print "Confusion matrix for QDA - \n",M
     ax = fig.add_subplot(324)
     __plot_roc(y_test,s,ax,r'(d) $QDA$')
 
@@ -384,7 +408,9 @@ def problem3():
     y_nu,s_nu = __svm(X_train,y_train,X_test,'nu')
     M_svc = __conf_matrix(y_pred,y_test)
     M_nu = __conf_matrix(y_nu,y_test)
-    print "Confusion matrix for SVM - \n",M_svc,"\n",M_nu
+    print __mis_err(M_svc)
+    print __mis_err(M_nu)
+    #print "Confusion matrix for SVM - \n",M_svc,"\n",M_nu
     ax = fig.add_subplot(325)
     __plot_roc(y_svc,s_svc,ax,r'(e) $SVM\left(Solver=SVC\right)$')
     ax = fig.add_subplot(326)
@@ -426,7 +452,10 @@ def problem3():
     M_svd = __conf_matrix(y_svd,y_test)
     M_lsqr = __conf_matrix(y_lsqr,y_test)
     M_eigen = __conf_matrix(y_eigen,y_test)
-    print "Confusion matrix for LDA - \n",M_svd, "\n",M_lsqr,"\n", M_eigen
+    print __mis_err(M_svd)
+    print __mis_err(M_lsqr)
+    print __mis_err(M_eigen)
+    #print "Confusion matrix for LDA - \n",M_svd, "\n",M_lsqr,"\n", M_eigen
     fig = plt.figure(figsize=(10,10),dpi=120)
     ax = fig.add_subplot(321)
     __plot_roc(y_test,s_svd,ax,r'(a) $LDA\left(Solver=SVD\right)$')
@@ -438,16 +467,19 @@ def problem3():
     ## QDA
     y_pred,s = __qda(X_train_tx,y_train,X_test_tx)
     M = __conf_matrix(y_pred,y_test)
-    print "Confusion matrix for QDA - \n",M
+    print __mis_err(M)
+    #print "Confusion matrix for QDA - \n",M
     ax = fig.add_subplot(324)
     __plot_roc(y_test,s,ax,r'(d) $QDA$')
 
     ## SVM
     y_svc,s_svc = __svm(X_train_tx,y_train,X_test_tx,'svc')
     y_nu,s_nu = __svm(X_train_tx,y_train,X_test_tx,'nu')
-    M_svc = __conf_matrix(y_pred,y_test)
+    M_svc = __conf_matrix(y_svc,y_test)
     M_nu = __conf_matrix(y_nu,y_test)
-    print "Confusion matrix for SVM - \n",M_svc,"\n",M_nu
+    print __mis_err(M_svc)
+    print __mis_err(M_nu)
+    #print "Confusion matrix for SVM - \n",M_svc,"\n",M_nu
     ax = fig.add_subplot(325)
     __plot_roc(y_svc,s_svc,ax,r'(e) $SVM\left(Solver=SVC\right)$')
     ax = fig.add_subplot(326)
